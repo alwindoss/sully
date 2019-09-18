@@ -1,5 +1,8 @@
 # sully
 
+## Backward compatibility
+The APIs are not stable, **do not use it in production**
+
 ## Introduction
 Today Go community is at a disadvantageous position and the reason for this is: There is no library like [Warrant](https://github.com/capless/warrant) for Python that would help the Go community to work with the AWS Cognito constructs in a simplified way.
 
