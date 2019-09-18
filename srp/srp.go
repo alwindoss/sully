@@ -10,9 +10,6 @@ import (
 	"math/big"
 	"strings"
 	"time"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
-	cip "github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 )
 
 const (
@@ -39,19 +36,19 @@ const (
 )
 
 // NewCognitoSRP creates a CognitoSRP object
-func NewCognitoSRP(username, password, poolID, clientID string, clientSecret *string) (*CognitoSRP, error) {
+func NewCognitoSRP(username, password, poolId, clientId string, clientSecret *string) (*CognitoSRP, error) {
 	c := &CognitoSRP{
 		username:     username,
 		password:     password,
-		poolID:       poolID,
-		clientID:     clientID,
+		poolId:       poolId,
+		clientId:     clientId,
 		clientSecret: clientSecret,
 	}
 
-	if !strings.Contains(poolID, "_") {
-		return nil, fmt.Errorf("invalid Cognito User Pool ID (%s), must be in format: '<region>_<pool name>'", poolID)
+	if !strings.Contains(poolId, "_") {
+		return nil, fmt.Errorf("invalid Cognito User Pool ID (%s), must be in format: '<region>_<pool name>'", poolId)
 	}
-	c.poolName = strings.Split(poolID, "_")[1]
+	c.poolName = strings.Split(poolId, "_")[1]
 
 	c.bigN = hexToBig(nHex)
 	c.g = hexToBig(gHex)
@@ -66,9 +63,9 @@ func NewCognitoSRP(username, password, poolID, clientID string, clientSecret *st
 type CognitoSRP struct {
 	username     string
 	password     string
-	poolID       string
+	poolId       string
 	poolName     string
-	clientID     string
+	clientId     string
 	clientSecret *string
 	bigN         *big.Int
 	g            *big.Int
@@ -84,12 +81,12 @@ func (csrp *CognitoSRP) GetUsername() string {
 
 // GetClientId returns the configured Cognito Cient ID
 func (csrp *CognitoSRP) GetClientId() string {
-	return csrp.clientID
+	return csrp.clientId
 }
 
 // GetUserPoolId returns the configured Cognito User Pool ID
 func (csrp *CognitoSRP) GetUserPoolId() string {
-	return csrp.poolID
+	return csrp.poolId
 }
 
 // GetUserPoolName returns the configured Cognito User Pool Name
@@ -116,7 +113,7 @@ func (csrp *CognitoSRP) GetSecretHash(username string) (string, error) {
 	if csrp.clientSecret == nil {
 		return "", fmt.Errorf("unable to create secret hash as client secret has not been configured")
 	}
-	msg := username + csrp.clientID
+	msg := username + csrp.clientId
 	key := []byte(*csrp.clientSecret)
 	h := hmac.New(sha256.New, key)
 	h.Write([]byte(msg))
@@ -124,9 +121,10 @@ func (csrp *CognitoSRP) GetSecretHash(username string) (string, error) {
 	return sh, nil
 }
 
-// PasswordVerifierChallenge returns a github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider.RespondToAuthChallengeInput
-// object which can be used to fulfil a PASSWORD_VERIFIER Cognito challenge
-func (csrp *CognitoSRP) PasswordVerifierChallenge(challengeParms map[string]string, ts time.Time) (*cip.RespondToAuthChallengeInput, error) {
+// PasswordVerifierChallenge returns the ChallengeResponses map to be used
+// inside the cognitoidentityprovider.RespondToAuthChallengeInput object which
+// fulfils the PASSWORD_VERIFIER Cognito challenge
+func (csrp *CognitoSRP) PasswordVerifierChallenge(challengeParms map[string]string, ts time.Time) (map[string]string, error) {
 	internalUsername := challengeParms["USERNAME"]
 	userId := challengeParms["USER_ID_FOR_SRP"]
 	saltHex := challengeParms["SALT"]
@@ -154,11 +152,7 @@ func (csrp *CognitoSRP) PasswordVerifierChallenge(challengeParms map[string]stri
 		response["SECRET_HASH"], _ = csrp.GetSecretHash(internalUsername)
 	}
 
-	return &cip.RespondToAuthChallengeInput{
-		ChallengeName:      cip.ChallengeNameTypePasswordVerifier,
-		ChallengeResponses: response,
-		ClientId:           aws.String(csrp.clientID),
-	}, nil
+	return response, nil
 }
 
 func (csrp *CognitoSRP) generateRandomSmallA() *big.Int {
