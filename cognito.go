@@ -13,21 +13,39 @@ import (
 	cip "github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 )
 
+// Config is the configuration that needs to be provided to the factory functon NewCognitoClient
+type Config struct {
+	UserPoolID     string
+	IdentityPoolID string
+	ClientID       string
+	Region         string
+}
+
 // Cognito is
 type Cognito interface {
 	FetchOpenIDToken(userName, password string) (string, error)
 }
 
-// NewCognitoClient is a factory to create the cognito client
-func NewCognitoClient(userPoolID, clientID, region, identityPoolID string) Cognito {
-	client := &awsCognito{}
-	if userPoolID == "" || clientID == "" {
-		panic("userPoolID and clientID are mandatory")
+func isEmpty(strs ...string) bool {
+	for _, s := range strs {
+		if s == "" {
+			return true
+		}
 	}
-	client.clientID = clientID
-	client.userPoolID = userPoolID
-	client.region = region
-	client.identityPoolID = identityPoolID
+	return false
+}
+
+// NewCognitoClient is a factory to create the cognito client
+// if the nil config is not provided or any of the fields in the config are not set then a nil object would ne returned
+func NewCognitoClient(cfg *Config) Cognito {
+	client := &awsCognito{}
+	if cfg == nil || isEmpty(cfg.UserPoolID, cfg.ClientID, cfg.IdentityPoolID, cfg.Region) {
+		return nil
+	}
+	client.clientID = cfg.ClientID
+	client.userPoolID = cfg.UserPoolID
+	client.region = cfg.Region
+	client.identityPoolID = cfg.IdentityPoolID
 	return client
 }
 
