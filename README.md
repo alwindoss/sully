@@ -1,4 +1,4 @@
-# sully
+# Sully
 
 ## Backward compatibility
 The APIs are not stable, **do not use it in production**
