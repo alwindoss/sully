@@ -14,7 +14,7 @@ func Example_fetchOpenIDToken() {
 		Region:         "dummy-region",
 	}
 	client := sully.NewCognitoClient(cfg)
-	token, err := client.FetchOpenIDToken("user-name", "password")
+	token, err := client.Authenticate("user-name", "password")
 	if err != nil {
 		fmt.Printf("Error: %v", err)
 		return

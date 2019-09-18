@@ -23,7 +23,7 @@ type Config struct {
 
 // Cognito is
 type Cognito interface {
-	FetchOpenIDToken(userName, password string) (string, error)
+	Authenticate(userName, password string) (string, error)
 }
 
 func isEmpty(strs ...string) bool {
@@ -58,8 +58,9 @@ type awsCognito struct {
 	identityPoolID string
 }
 
-// FetchOpenIDToken function is used to authenticate users against AWS Cognito
-func (c *awsCognito) FetchOpenIDToken(userName, password string) (string, error) {
+// Authenticate authenticates a user and if the authentication is successful
+// it returns the token else returns empty string but a non nil error
+func (c *awsCognito) Authenticate(userName, password string) (string, error) {
 	ctx := context.Background()
 	csrp, err := srp.NewCognitoSRP(userName, password, c.userPoolID, c.clientID, nil)
 	if err != nil {
